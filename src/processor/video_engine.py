@@ -32,21 +32,33 @@ class VideoEngine:
         clip = ImageClip(img_array).set_duration(duration)
         return clip
 
-    def create_basic_video(self, image_path, audio_path, output_name="final_video.mp4"):
+    def create_basic_video(self, image_path, audio_path, background_music_path=None, output_name="final_video.mp4"):
         """
-        Creates a basic video by combining an image and an audio track.
+        Creates a basic video by combining an image, narration audio, and optional background music.
         """
-        audio = AudioFileClip(audio_path)
-        image = ImageClip(image_path).set_duration(audio.duration)
+        narration = AudioFileClip(audio_path)
+        image = ImageClip(image_path).set_duration(narration.duration)
         
-        # Resize image to fit screen while maintaining aspect ratio or cropping
-        # For shorts (1080x1920), we usually want to 'fill'
+        # Resize image to fit screen
         w, h = self.config["width"], self.config["height"]
         image = image.resize(height=h) if image.w/image.h > w/h else image.resize(width=w)
-        # Center crop
         image = image.set_position("center")
         
-        video = image.set_audio(audio)
+        # Combine audio
+        final_audio = narration
+        if background_music_path and os.path.exists(background_music_path):
+            bg_music = AudioFileClip(background_music_path).volumex(0.15) # 15% volume
+            if bg_music.duration < narration.duration:
+                # Loop if too short
+                from moviepy.audio.fx.all import audio_loop
+                bg_music = audio_loop(bg_music, duration=narration.duration)
+            else:
+                bg_music = bg_music.subclip(0, narration.duration)
+            
+            from moviepy.audio.AudioClip import CompositeAudioClip
+            final_audio = CompositeAudioClip([narration, bg_music])
+            
+        video = image.set_audio(final_audio)
         
         output_path = PROCESSED_DATA_DIR / output_name
         video.write_videofile(str(output_path), fps=self.config["fps"], codec="libx264", audio_codec="aac")
