@@ -38,7 +38,16 @@ class YouTubeUploader:
             if status:
                 print(f"Uploaded {int(status.progress() * 100)}%")
         
+        # YouTube Quota: A video upload costs approx 1600 units
+        self.log_quota_usage(1600)
+        
         return response.get("id")
+
+    def log_quota_usage(self, units):
+        """Simple quota logger."""
+        import datetime
+        with open("quota_usage.log", "a") as f:
+            f.write(f"{datetime.datetime.now().isoformat()} - Used {units} units\n")
 
 if __name__ == "__main__":
     print("YouTubeUploader initialized.")
