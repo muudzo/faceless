@@ -1,6 +1,7 @@
 import requests
 import os
 from src.config import NASA_API_KEY, RAW_DATA_DIR
+from src.utils import retry
 
 class NASAClient:
     BASE_URL = "https://api.nasa.gov/planetary/apod"
@@ -8,6 +9,7 @@ class NASAClient:
     def __init__(self, api_key=NASA_API_KEY):
         self.api_key = api_key
 
+    @retry(Exception, tries=3, delay=2)
     def get_daily_fact(self, date=None):
         """
         Fetches the Astronomy Picture of the Day for a given date.
@@ -23,6 +25,7 @@ class NASAClient:
         response.raise_for_status()
         return response.json()
 
+    @retry(Exception, tries=3, delay=5)
     def download_image(self, url, filename):
         """
         Downloads the image from the given URL and saves it to the raw data directory.
