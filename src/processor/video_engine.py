@@ -32,24 +32,32 @@ class VideoEngine:
         clip = ImageClip(img_array).set_duration(duration)
         return clip
 
-    def create_basic_video(self, image_path, audio_path, background_music_path=None, output_name="final_video.mp4"):
+    def zoom_in_effect(self, clip, zoom_ratio=0.04):
+        """
+        Applies a subtle zoom-in effect to the clip.
+        """
+        return clip.resize(lambda t: 1 + zoom_ratio * t)
+
+    def create_basic_video(self, image_path, audio_path, background_music_path=None, output_name="final_video.mp4", zoom=True):
         """
         Creates a basic video by combining an image, narration audio, and optional background music.
         """
         narration = AudioFileClip(audio_path)
         image = ImageClip(image_path).set_duration(narration.duration)
         
-        # Resize image to fit screen
+        # Resize image to fit screen (before zoom)
         w, h = self.config["width"], self.config["height"]
         image = image.resize(height=h) if image.w/image.h > w/h else image.resize(width=w)
         image = image.set_position("center")
+        
+        if zoom:
+            image = self.zoom_in_effect(image)
         
         # Combine audio
         final_audio = narration
         if background_music_path and os.path.exists(background_music_path):
             bg_music = AudioFileClip(background_music_path).volumex(0.15) # 15% volume
             if bg_music.duration < narration.duration:
-                # Loop if too short
                 from moviepy.audio.fx.all import audio_loop
                 bg_music = audio_loop(bg_music, duration=narration.duration)
             else:
