@@ -19,50 +19,35 @@ class VideoPipeline:
         self.video_engine = VideoEngine()
         self.thumb_gen = ThumbnailGenerator()
 
+    def fetch_data(self, date=None):
+        logger.info("Step 1: Fetching NASA data...")
+        return self.nasa.get_latest_image_fact(
+            start_date=datetime.datetime.strptime(date, '%Y-%m-%d').date() if date else None
+        )
+
+    def generate_content(self, title, explanation):
+        logger.info("Step 2 & 4: Generating script and voiceover...")
+        script = self.script_gen.generate_short_script(title, explanation)
+        voice_path = self.voice_gen.generate_voice(script, "voiceover.mp3")
+        return script, voice_path
+
     def run(self, date=None, dry_run=False):
-        logger.info(f"Starting pipeline for date: {date or 'today'} (Dry Run: {dry_run})")
-        
+        logger.info(f"Starting pipeline (Dry Run: {dry_run})")
         try:
-            # 1. Fetch NASA data using fallback logic
-            data = self.nasa.get_latest_image_fact(
-                start_date=datetime.datetime.strptime(date, '%Y-%m-%d').date() if date else None
-            )
-            title = data.get("title")
-            explanation = data.get("explanation")
-            logger.info(f"Fetched fact: {title}")
+            data = self.fetch_data(date)
+            title, explanation = data.get("title"), data.get("explanation")
             
-            # 2. Generate script
-            script = self.script_gen.generate_short_script(title, explanation)
-            logger.info(f"Generated script: {script}")
-            
-            # 3. Download image
-            if data.get("media_type") != "image":
-                logger.warning("Today's APOD is not an image (maybe a video). Skipping.")
-                return None
-            
+            script, voice_path = self.generate_content(title, explanation)
             img_path = self.nasa.download_image(data.get("url"), "nasa_daily.jpg")
-            logger.info(f"Downloaded NASA image: {img_path}")
-            
-            # 4. Generate voiceover
-            voice_path = self.voice_gen.generate_voice(script, "voiceover.mp3")
-            logger.info(f"Generated voiceover: {voice_path}")
             
             if dry_run:
-                logger.info("Dry run enabled. Skipping video assembly and upload.")
-                return {
-                    "title": title,
-                    "description": script,
-                    "image": img_path,
-                    "audio": voice_path
-                }
+                return {"title": title, "description": script, "image": img_path, "audio": voice_path}
 
-            # 5. Assemble video
+            logger.info("Step 5: Composing video...")
             video_path = self.video_engine.create_basic_video(img_path, voice_path, output_name="final_short.mp4")
-            logger.info(f"Assembled video: {video_path}")
             
-            # 6. Generate thumbnail
+            logger.info("Step 6: Generating thumbnail...")
             thumb_path = self.thumb_gen.generate_thumbnail(video_path, text=title.upper())
-            logger.info(f"Generated thumbnail: {thumb_path}")
             
             return {
                 "video": video_path,
@@ -70,7 +55,6 @@ class VideoPipeline:
                 "title": title,
                 "description": script
             }
-            
         except Exception as e:
             logger.exception("Pipeline failed")
             raise PipelineError(str(e))
