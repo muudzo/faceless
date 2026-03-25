@@ -26,6 +26,21 @@ class NASAClient:
         response.raise_for_status()
         return response.json()
 
+    def get_latest_image_fact(self, start_date=None, max_days=7):
+        """
+        Searches backwards from start_date for the most recent image APOD.
+        """
+        import datetime
+        current_date = start_date or datetime.date.today()
+        
+        for _ in range(max_days):
+            data = self.get_daily_fact(current_date.strftime("%Y-%m-%d"))
+            if data.get("media_type") == "image":
+                return data
+            current_date -= datetime.timedelta(days=1)
+        
+        raise ValueError(f"No image APOD found in the last {max_days} days.")
+
     @retry(Exception, tries=3, delay=5)
     def download_image(self, url, filename):
         """
