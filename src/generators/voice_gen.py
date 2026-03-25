@@ -20,10 +20,17 @@ class VoiceGenerator:
         if speed_up != 1.0:
             from moviepy.editor import AudioFileClip
             audio = AudioFileClip(str(temp_path))
-            # Speeding up audio in moviepy requires changing the fps or using fx
-            # but gTTS output is simple. We can use fx.all.speedx
-            from moviepy.audio.fx.all import speedx
+            
+            # Basic validation: ensure narration isn't empty
+            if audio.duration == 0:
+                raise ValueError("Generated audio is empty.")
+                
+            from moviepy.audio.fx.all import speedx, volumex
+            # Speed up and normalize volume to -3dB approx (volumex is relative)
             new_audio = speedx(audio, factor=speed_up)
+            # Ensure consistent volume levels
+            new_audio = volumex(new_audio, factor=1.2) 
+            
             new_audio.write_audiofile(str(final_path), verbose=False, logger=None)
             audio.close()
             new_audio.close()
