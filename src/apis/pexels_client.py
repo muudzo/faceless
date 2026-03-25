@@ -7,6 +7,9 @@ class PexelsClient:
 
     def __init__(self, api_key=PEXELS_API_KEY):
         self.api_key = api_key
+        self.session = requests.Session()
+        if self.api_key:
+            self.session.headers.update({"Authorization": self.api_key})
 
     def search_videos(self, query, per_page=5):
         """
@@ -15,14 +18,13 @@ class PexelsClient:
         if not self.api_key:
             raise ValueError("PEXELS_API_KEY is not set.")
 
-        headers = {"Authorization": self.api_key}
         params = {
             "query": query,
             "per_page": per_page,
-            "orientation": "landscape" # Shorts can use landscape and crop, or portrait
+            "orientation": "landscape"
         }
         
-        response = requests.get(self.BASE_URL, headers=headers, params=params)
+        response = self.session.get(self.BASE_URL, params=params)
         response.raise_for_status()
         return response.json()
 
@@ -31,7 +33,7 @@ class PexelsClient:
         Downloads the video from the given URL.
         """
         save_path = RAW_DATA_DIR / filename
-        response = requests.get(url, stream=True)
+        response = self.session.get(url, stream=True)
         response.raise_for_status()
         
         with open(save_path, "wb") as f:

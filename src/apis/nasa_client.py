@@ -8,6 +8,7 @@ class NASAClient:
 
     def __init__(self, api_key=NASA_API_KEY):
         self.api_key = api_key
+        self.session = requests.Session()
 
     @retry(Exception, tries=3, delay=2)
     def get_daily_fact(self, date=None):
@@ -21,7 +22,7 @@ class NASAClient:
         if date:
             params["date"] = date
 
-        response = requests.get(self.BASE_URL, params=params)
+        response = self.session.get(self.BASE_URL, params=params)
         response.raise_for_status()
         return response.json()
 
@@ -31,7 +32,7 @@ class NASAClient:
         Downloads the image from the given URL and saves it to the raw data directory.
         """
         save_path = RAW_DATA_DIR / filename
-        response = requests.get(url, stream=True)
+        response = self.session.get(url, stream=True)
         response.raise_for_status()
         
         with open(save_path, "wb") as f:
