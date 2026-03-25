@@ -34,13 +34,15 @@ class VideoEngine:
 
     def zoom_in_effect(self, clip, zoom_ratio=0.04):
         """
-        Applies a subtle zoom-in effect to the clip.
+        Applies a subtle zoom-in effect. Using a small zoom_ratio and 
+        ensuring smooth interpolation.
         """
         return clip.resize(lambda t: 1 + zoom_ratio * t)
 
-    def create_basic_video(self, image_path, audio_path, background_music_path=None, output_name="final_video.mp4", zoom=True):
+    def create_basic_video(self, image_path, audio_path, background_music_path=None, output_name="final_video.mp4", zoom=True, preset="medium"):
         """
-        Creates a basic video by combining an image, narration audio, and optional background music.
+        Creates a basic video with optimized ffmpeg presets.
+        Presets: 'ultrafast', 'superfast', 'veryfast', 'faster', 'fast', 'medium', 'slow', 'slower', 'veryslow'.
         """
         narration = AudioFileClip(audio_path)
         image = ImageClip(image_path).set_duration(narration.duration)
@@ -56,7 +58,7 @@ class VideoEngine:
         # Combine audio
         final_audio = narration
         if background_music_path and os.path.exists(background_music_path):
-            bg_music = AudioFileClip(background_music_path).volumex(0.15) # 15% volume
+            bg_music = AudioFileClip(background_music_path).volumex(0.15)
             if bg_music.duration < narration.duration:
                 from moviepy.audio.fx.all import audio_loop
                 bg_music = audio_loop(bg_music, duration=narration.duration)
@@ -69,7 +71,15 @@ class VideoEngine:
         video = image.set_audio(final_audio)
         
         output_path = PROCESSED_DATA_DIR / output_name
-        video.write_videofile(str(output_path), fps=self.config["fps"], codec="libx264", audio_codec="aac")
+        # Using optimized presets and threads for performance
+        video.write_videofile(
+            str(output_path), 
+            fps=self.config["fps"], 
+            codec="libx264", 
+            audio_codec="aac",
+            preset=preset,
+            threads=4
+        )
         
         return str(output_path)
 
