@@ -37,6 +37,26 @@ def log_error(logger, message, e=None):
 import time
 from functools import wraps
 
+def timeit(logger=None):
+    """
+    Performance profiling decorator.
+    """
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            start = time.perf_counter()
+            result = f(*args, **kwargs)
+            end = time.perf_counter()
+            elapsed = end - start
+            msg = f"Function '{f.__name__}' took {elapsed:.4f} seconds"
+            if logger:
+                logger.info(msg)
+            else:
+                print(msg)
+            return result
+        return wrapper
+    return decorator
+
 def retry(exceptions, tries=3, delay=1, backoff=2, logger=None):
     """
     Retry decorator with exponential backoff.
