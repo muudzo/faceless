@@ -7,8 +7,18 @@ class YouTubeUploader:
 
     def upload_video(self, file_path, title, description, tags=None, category_id="27", privacy_status="private"):
         """
-        Uploads a video to YouTube with metadata.
+        Uploads a video to YouTube with metadata and resumable tracking.
         """
+        # Check if already uploaded
+        import json
+        state_file = "upload_state.json"
+        if os.path.exists(state_file):
+            with open(state_file, "r") as f:
+                state = json.load(f)
+                if state.get("file_path") == str(file_path) and state.get("status") == "success":
+                    print(f"Video already uploaded: {state.get('video_id')}")
+                    return state.get("video_id")
+
         body = {
             "snippet": {
                 "title": title,
@@ -22,15 +32,8 @@ class YouTubeUploader:
             }
         }
 
-        # Create media file upload object
-        media = MediaFileUpload(file_path, chunksize=-1, resumable=True)
-
-        # Execute upload
-        request = self.youtube.videos().insert(
-            part="snippet,status",
-            body=body,
-            media_body=media
-        )
+        media = MediaFileUpload(file_path, chunksize=1024*1024, resumable=True)
+        request = self.youtube.videos().insert(part="snippet,status", body=body, media_body=media)
         
         response = None
         while response is None:
@@ -38,10 +41,13 @@ class YouTubeUploader:
             if status:
                 print(f"Uploaded {int(status.progress() * 100)}%")
         
-        # YouTube Quota: A video upload costs approx 1600 units
+        video_id = response.get("id")
+        # Save success state
+        with open(state_file, "w") as f:
+            json.dump({"file_path": str(file_path), "video_id": video_id, "status": "success"}, f)
+            
         self.log_quota_usage(1600)
-        
-        return response.get("id")
+        return video_id
 
     def log_quota_usage(self, units):
         """Simple quota logger."""
