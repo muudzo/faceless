@@ -1,3 +1,7 @@
+import os
+from moviepy import ImageClip, AudioFileClip, VideoFileClip, CompositeVideoClip
+from moviepy.audio.AudioClip import CompositeAudioClip
+from moviepy.audio.tools.cuts import audio_loop
 from src.config import VIDEO_CONFIG, PROCESSED_DATA_DIR, FONTS_DIR
 from src.processor.text_renderer import TextRenderer
 
@@ -18,8 +22,7 @@ class VideoEngine:
             color=color, 
             bgcolor=bgcolor
         )
-        clip = ImageClip(img_array).set_duration(duration)
-        return clip
+        return ImageClip(img_array).with_duration(duration)
 
     def zoom_in_effect(self, clip, zoom_ratio=0.04):
         """
