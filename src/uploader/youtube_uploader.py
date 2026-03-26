@@ -98,5 +98,21 @@ class YouTubeUploader:
             # but setting status to published and being owner usually suffices for pinning logic in automation wraps.
             # Actually, pinning is often done via the YouTube UI/Studio API which is restricted.
             pass
+    def generate_ai_reply(self, comment_text):
+        """
+        Generates an AI reply to a comment using Groq.
+        """
+        from src.apis.groq_client import GroqClient
+        from src.config import GROQ_API_KEY
+        
+        if not GROQ_API_KEY:
+            return "Thanks for watching!"
+            
+        try:
+            ai = GroqClient()
+            prompt = f"Write a short, engaging, and friendly reply to this YouTube comment: '{comment_text}'. Keep it under 20 words."
+            reply = ai.generate_content(prompt, system_prompt="You are a friendly YouTube creator.")
+            return reply.strip()
         except Exception as e:
-            logger.error(f"Failed to pin comment: {e}")
+            logger.error(f"AI reply generation failed: {e}")
+            return "Thanks for your comment!"
