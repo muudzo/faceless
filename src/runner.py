@@ -1,8 +1,8 @@
 from src.apis.nasa_client import NASAClient
 from src.apis.pexels_client import PexelsClient
 from src.generators.script_gen import ScriptGenerator
-from src.generators.voice_gen import VoiceGenerator
-from src.processor.video_engine import VideoEngine
+from src.generators.edge_voice_gen import EdgeVoiceGenerator
+from src.generators.shorts_generator import ShortsGenerator
 from src.processor.thumbnail_gen import ThumbnailGenerator
 from src.utils import setup_logger, PipelineError
 import os
@@ -18,8 +18,8 @@ class VideoPipeline:
         self.nasa = NASAClient()
         self.pexels = PexelsClient()
         self.script_gen = ScriptGenerator()
-        self.voice_gen = VoiceGenerator()
-        self.video_engine = VideoEngine()
+        self.voice_gen = EdgeVoiceGenerator()
+        self.shorts_gen = ShortsGenerator()
         self.thumb_gen = ThumbnailGenerator()
         self.research = ResearchClient()
         self.seo = SEOOptimizer()
@@ -65,8 +65,14 @@ class VideoPipeline:
                     "thumbnail": preview_thumb
                 }
 
-            logger.info("Step 5: Composing video...")
-            video_path = self.video_engine.create_basic_video(img_path, voice_path, output_name="final_short.mp4")
+            logger.info("Step 5: Composing vertical video utilizing ShortsGenerator...")
+            video_path = self.shorts_gen.create_short(
+                image_path=img_path, 
+                audio_path=voice_path, 
+                script=script, 
+                title=title, 
+                output_name="final_short.mp4"
+            )
             
             logger.info("Step 6: Generating thumbnail...")
             thumb_path = self.thumb_gen.generate_thumbnail(video_path, text=title.upper())
