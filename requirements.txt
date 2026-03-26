@@ -10,3 +10,4 @@ pillow
 ffmpeg-python
 pydantic
 groq
+wikipedia-api
