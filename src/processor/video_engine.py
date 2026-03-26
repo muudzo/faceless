@@ -52,26 +52,32 @@ class VideoEngine:
 
     def create_basic_video(self, image_path, audio_path, bg_music_paths=None, output_name="final_video.mp4", effects=True, preset="medium"):
         """
-        Creates a video with advanced multi-track audio mixing and normalization.
+        Creates a video with native 9:16 support for YouTube Shorts.
         """
         narration = AudioFileClip(audio_path)
-        image = ImageClip(image_path).set_duration(narration.duration)
+        image = ImageClip(image_path).with_duration(narration.duration)
         
-        # Resize image
-        w, h = self.config["width"], self.config["height"]
-        image = image.resize(height=h) if image.w/image.h > w/h else image.resize(width=w)
-        image = image.set_position("center")
+        # 9:16 Vertical Framing Logic
+        target_w, target_h = self.config["width"], self.config["height"]
         
-        if zoom:
-            image = self.zoom_in_effect(image)
+        # Calculate scaling to fill the screen (crop if necessary)
+        # This ensures we don't have black bars on the sides/top
+        img_w, img_h = image.size
+        scale = max(target_w / img_w, target_h / img_h)
+        image = image.resized(scale)
+        
+        # Center the image in the vertical frame
+        image = image.with_position("center")
+        
+        if effects:
+            image = self.advanced_ken_burns(image)
         
         # Audio Mixing
-        audio_tracks = [narration.volumex(1.2)] # Slightly boost narration
-        
+        audio_tracks = [narration.volumex(1.2)]
         if bg_music_paths:
             for i, bg_path in enumerate(bg_music_paths):
                 if os.path.exists(bg_path):
-                    bg_clip = AudioFileClip(bg_path).volumex(0.1 / (i+1)) # Lower volume for layered tracks
+                    bg_clip = AudioFileClip(bg_path).volumex(0.1 / (i+1))
                     if bg_clip.duration < narration.duration:
                         bg_clip = audio_loop(bg_clip, duration=narration.duration)
                     else:
@@ -79,11 +85,14 @@ class VideoEngine:
                     audio_tracks.append(bg_clip)
         
         final_audio = CompositeAudioClip(audio_tracks)
+        video = image.with_audio(final_audio)
         
-        video = image.set_audio(final_audio)
+        # Add background canvas to ensure size is exact
+        bg_canvas = ColorClip(size=(target_w, target_h), color=(0,0,0)).with_duration(narration.duration)
+        final_video = CompositeVideoClip([bg_canvas, video])
         
         output_path = PROCESSED_DATA_DIR / output_name
-        video.write_videofile(
+        final_video.write_videofile(
             str(output_path), 
             fps=self.config["fps"], 
             codec="libx264", 
