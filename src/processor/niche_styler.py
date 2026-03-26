@@ -20,6 +20,12 @@ class NicheStyler:
             "text_color": "#E0E0E0",
             "font": "Courier New",
             "music_style": "chilling_suspense"
+        },
+        "Zimbabwean Heritage": {
+            "bg_color": (20, 40, 20), # Deep green
+            "text_color": "#FFD700", # Gold
+            "font": "Verdana Bold",
+            "music_style": "afro_rhythms_cinematic"
         }
     }
 
