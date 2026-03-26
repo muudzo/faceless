@@ -9,26 +9,40 @@ class StorageManager:
     def __init__(self, raw_dir=RAW_DATA_DIR, processed_dir=PROCESSED_DATA_DIR):
         self.raw_dir = raw_dir
         self.processed_dir = processed_dir
+        self.temp_dir = self.processed_dir / "temp"
+        self.temp_dir.mkdir(parents=True, exist_ok=True)
 
-    def cleanup_temp_files(self, keep_vids=False):
+    def get_session_dir(self, session_id):
+        """Creates and returns a subfolder for a specific production session."""
+        session_path = self.temp_dir / f"session_{session_id}"
+        session_path.mkdir(parents=True, exist_ok=True)
+        return session_path
+
+    def cleanup(self, keep_logs=True, session_id=None):
         """
-        Removes temporary assets like voiceovers and NASA images.
+        Cleans up temporary files, optionally preserving logs and specific sessions.
         """
-        extensions_to_remove = [".mp3", ".jpg", ".png"]
-        if not keep_vids:
-            extensions_to_remove.append(".mp4")
+        target = self.temp_dir if not session_id else (self.temp_dir / f"session_{session_id}")
+        if not target.exists():
+            return
             
-        count = 0
-        for directory in [self.raw_dir, self.processed_dir]:
-            for file in directory.iterdir():
-                if file.suffix.lower() in extensions_to_remove and not file.name.startswith("."):
-                    try:
-                        os.remove(file)
-                        count += 1
-                    except Exception as e:
-                        print(f"Failed to remove {file}: {e}")
+        logger.info(f"Cleaning storage: {target}")
+        for path in target.glob("**/*"):
+            if path.is_file():
+                if keep_logs and path.suffix in [".log", ".db"]:
+                    continue
+                try:
+                    path.unlink()
+                except Exception as e:
+                    logger.warning(f"Could not delete {path}: {e}")
         
-        return count
+        # Remove empty session dirs
+        if session_id:
+            try:
+                target.rmdir()
+            except:
+                pass
+        
 
 if __name__ == "__main__":
     manager = StorageManager()
