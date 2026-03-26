@@ -1,4 +1,4 @@
-from moviepy.editor import VideoFileClip
+from moviepy import VideoFileClip
 from PIL import Image, ImageDraw, ImageFont
 from src.config import PROCESSED_DATA_DIR
 from src.processor.text_renderer import TextRenderer

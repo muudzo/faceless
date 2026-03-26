@@ -1,7 +1,7 @@
 import os
 from moviepy import ImageClip, AudioFileClip, VideoFileClip, CompositeVideoClip
 from moviepy.audio.AudioClip import CompositeAudioClip
-from moviepy.audio.tools.cuts import audio_loop
+from moviepy.audio.fx.AudioLoop import AudioLoop
 from src.config import VIDEO_CONFIG, PROCESSED_DATA_DIR, FONTS_DIR
 from src.processor.text_renderer import TextRenderer
 
@@ -79,7 +79,7 @@ class VideoEngine:
                 if os.path.exists(bg_path):
                     bg_clip = AudioFileClip(bg_path).volumex(0.1 / (i+1))
                     if bg_clip.duration < narration.duration:
-                        bg_clip = audio_loop(bg_clip, duration=narration.duration)
+                        bg_clip = bg_clip.with_effects([AudioLoop(duration=narration.duration)])
                     else:
                         bg_clip = bg_clip.subclip(0, narration.duration)
                     audio_tracks.append(bg_clip)
