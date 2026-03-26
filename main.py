@@ -48,3 +48,6 @@ def main():
     except Exception as e:
         logger.error(f"Execution failed: {e}")
         print(f"Error: {e}")
+
+if __name__ == "__main__":
+    main()
