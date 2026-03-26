@@ -11,3 +11,4 @@ ffmpeg-python
 pydantic
 groq
 wikipedia-api
+edge-tts
