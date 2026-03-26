@@ -18,6 +18,7 @@ class Settings(BaseModel):
     # API Keys
     NASA_API_KEY: str = os.getenv("NASA_API_KEY", "DEMO_KEY")
     PEXELS_API_KEY: str = os.getenv("PEXELS_API_KEY", "")
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
 
     # Output Settings
     OUTPUT_WIDTH: int = int(os.getenv("OUTPUT_WIDTH", 1080))
@@ -39,6 +40,7 @@ MUSIC_DIR = settings.MUSIC_DIR
 FONTS_DIR = settings.FONTS_DIR
 NASA_API_KEY = settings.NASA_API_KEY
 PEXELS_API_KEY = settings.PEXELS_API_KEY
+GROQ_API_KEY = settings.GROQ_API_KEY
 
 VIDEO_CONFIG = {
     "width": settings.OUTPUT_WIDTH,
