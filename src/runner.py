@@ -11,6 +11,7 @@ import datetime
 logger = setup_logger()
 
 from src.apis.research_client import ResearchClient
+from src.uploader.seo_optimizer import SEOOptimizer
 
 class VideoPipeline:
     def __init__(self):
@@ -21,6 +22,7 @@ class VideoPipeline:
         self.video_engine = VideoEngine()
         self.thumb_gen = ThumbnailGenerator()
         self.research = ResearchClient()
+        self.seo = SEOOptimizer()
 
     def fetch_data(self, date=None):
         logger.info("Step 1: Fetching NASA data and performing research...")
@@ -61,11 +63,17 @@ class VideoPipeline:
             logger.info("Step 6: Generating thumbnail...")
             thumb_path = self.thumb_gen.generate_thumbnail(video_path, text=title.upper())
             
+            logger.info("Step 7: Optimizing SEO metadata...")
+            seo_data = self.seo.optimize_metadata(title)
+            final_title = seo_data["title"]
+            tags = seo_data["tags"]
+            
             return {
                 "video": video_path,
                 "thumbnail": thumb_path,
-                "title": title,
-                "description": script
+                "title": final_title,
+                "description": script,
+                "tags": tags
             }
         except Exception as e:
             logger.exception("Pipeline failed")
