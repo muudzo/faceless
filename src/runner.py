@@ -55,7 +55,15 @@ class VideoPipeline:
             img_path = self.nasa.download_image(data.get("url"), "nasa_daily.jpg")
             
             if dry_run:
-                return {"title": title, "description": script, "image": img_path, "audio": voice_path}
+                # Generate a preview thumbnail from the image instead of video
+                preview_thumb = self.thumb_gen.generate_thumbnail(img_path, text=title.upper(), niche="Space")
+                return {
+                    "title": title, 
+                    "description": script, 
+                    "image": img_path, 
+                    "audio": voice_path,
+                    "thumbnail": preview_thumb
+                }
 
             logger.info("Step 5: Composing video...")
             video_path = self.video_engine.create_basic_video(img_path, voice_path, output_name="final_short.mp4")
