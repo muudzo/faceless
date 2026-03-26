@@ -10,6 +10,8 @@ import datetime
 
 logger = setup_logger()
 
+from src.apis.research_client import ResearchClient
+
 class VideoPipeline:
     def __init__(self):
         self.nasa = NASAClient()
@@ -18,12 +20,22 @@ class VideoPipeline:
         self.voice_gen = VoiceGenerator()
         self.video_engine = VideoEngine()
         self.thumb_gen = ThumbnailGenerator()
+        self.research = ResearchClient()
 
     def fetch_data(self, date=None):
-        logger.info("Step 1: Fetching NASA data...")
-        return self.nasa.get_latest_image_fact(
+        logger.info("Step 1: Fetching NASA data and performing research...")
+        data = self.nasa.get_latest_image_fact(
             start_date=datetime.datetime.strptime(date, '%Y-%m-%d').date() if date else None
         )
+        # Attempt to verify with Wikipedia for more context
+        research = self.research.search_and_verify(data.get("title"))
+        if research:
+            logger.info(f"Fact verified on Wikipedia: {research['url']}")
+            data["research_summary"] = research["summary"]
+        else:
+            logger.warning("No Wikipedia verification found for this topic.")
+            
+        return data
 
     def generate_content(self, title, explanation):
         logger.info("Step 2 & 4: Generating script and voiceover...")
