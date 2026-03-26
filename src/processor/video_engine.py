@@ -28,15 +28,14 @@ class VideoEngine:
         """
         return clip.resize(lambda t: 1 + zoom_ratio * t)
 
-    def create_basic_video(self, image_path, audio_path, background_music_path=None, output_name="final_video.mp4", zoom=True, preset="medium"):
+    def create_basic_video(self, image_path, audio_path, bg_music_paths=None, output_name="final_video.mp4", zoom=True, preset="medium"):
         """
-        Creates a basic video with optimized ffmpeg presets.
-        Presets: 'ultrafast', 'superfast', 'veryfast', 'faster', 'fast', 'medium', 'slow', 'slower', 'veryslow'.
+        Creates a video with advanced multi-track audio mixing and normalization.
         """
         narration = AudioFileClip(audio_path)
         image = ImageClip(image_path).set_duration(narration.duration)
         
-        # Resize image to fit screen (before zoom)
+        # Resize image
         w, h = self.config["width"], self.config["height"]
         image = image.resize(height=h) if image.w/image.h > w/h else image.resize(width=w)
         image = image.set_position("center")
@@ -44,23 +43,24 @@ class VideoEngine:
         if zoom:
             image = self.zoom_in_effect(image)
         
-        # Combine audio
-        final_audio = narration
-        if background_music_path and os.path.exists(background_music_path):
-            bg_music = AudioFileClip(background_music_path).volumex(0.15)
-            if bg_music.duration < narration.duration:
-                from moviepy.audio.fx.all import audio_loop
-                bg_music = audio_loop(bg_music, duration=narration.duration)
-            else:
-                bg_music = bg_music.subclip(0, narration.duration)
-            
-            from moviepy.audio.AudioClip import CompositeAudioClip
-            final_audio = CompositeAudioClip([narration, bg_music])
-            
+        # Audio Mixing
+        audio_tracks = [narration.volumex(1.2)] # Slightly boost narration
+        
+        if bg_music_paths:
+            for i, bg_path in enumerate(bg_music_paths):
+                if os.path.exists(bg_path):
+                    bg_clip = AudioFileClip(bg_path).volumex(0.1 / (i+1)) # Lower volume for layered tracks
+                    if bg_clip.duration < narration.duration:
+                        bg_clip = audio_loop(bg_clip, duration=narration.duration)
+                    else:
+                        bg_clip = bg_clip.subclip(0, narration.duration)
+                    audio_tracks.append(bg_clip)
+        
+        final_audio = CompositeAudioClip(audio_tracks)
+        
         video = image.set_audio(final_audio)
         
         output_path = PROCESSED_DATA_DIR / output_name
-        # Using optimized presets and threads for performance
         video.write_videofile(
             str(output_path), 
             fps=self.config["fps"], 
