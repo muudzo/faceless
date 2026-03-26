@@ -1,13 +1,40 @@
+from src.apis.groq_client import GroqClient
+from src.config import GROQ_API_KEY
 import re
 
 class ScriptGenerator:
-    def __init__(self, max_length=150):
+    def __init__(self, max_length=500):
         self.max_length = max_length
+        self.ai = None
+        if GROQ_API_KEY:
+            try:
+                self.ai = GroqClient()
+            except:
+                pass
 
-    def generate_short_script(self, title, explanation):
+    def generate_short_script(self, title, explanation, research_context=None):
         """
-        Processes NASA APOD data into a short, punchy script.
+        Generates an engaging, emotional narrative using Llama-3 if available.
         """
+        if self.ai:
+            prompt = f"""
+            Write a viral, emotional 60-second YouTube Shorts script about {title}.
+            NASA Fact: {explanation}
+            {f'Expert Context: {research_context}' if research_context else ''}
+            
+            Rules:
+            1. Start with a massive hook.
+            2. Use 'You' to engage the audience.
+            3. End with a question or call to action.
+            4. Keep it under 140 words.
+            """
+            try:
+                script = self.ai.generate_content(prompt, system_prompt="You are a viral YouTube storyteller.")
+                return script.strip()
+            except:
+                pass
+
+        # Fallback to basic cleaning logic
         # Clean up the explanation (remove parenthetical citations, excessive spaces)
         clean_text = re.sub(r'\([^)]*\)', '', explanation)
         clean_text = re.sub(r'\s+', ' ', clean_text).strip()

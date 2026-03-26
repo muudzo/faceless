@@ -37,9 +37,9 @@ class VideoPipeline:
             
         return data
 
-    def generate_content(self, title, explanation):
+    def generate_content(self, title, explanation, research_context=None):
         logger.info("Step 2 & 4: Generating script and voiceover...")
-        script = self.script_gen.generate_short_script(title, explanation)
+        script = self.script_gen.generate_short_script(title, explanation, research_context)
         voice_path = self.voice_gen.generate_voice(script, "voiceover.mp3")
         return script, voice_path
 
@@ -49,7 +49,7 @@ class VideoPipeline:
             data = self.fetch_data(date)
             title, explanation = data.get("title"), data.get("explanation")
             
-            script, voice_path = self.generate_content(title, explanation)
+            script, voice_path = self.generate_content(title, explanation, data.get("research_summary"))
             img_path = self.nasa.download_image(data.get("url"), "nasa_daily.jpg")
             
             if dry_run:
