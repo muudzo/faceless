@@ -24,14 +24,33 @@ class VideoEngine:
         )
         return ImageClip(img_array).with_duration(duration)
 
-    def zoom_in_effect(self, clip, zoom_ratio=0.04):
+    def advanced_ken_burns(self, clip, zoom_ratio=0.1, direction="random"):
         """
-        Applies a subtle zoom-in effect. Using a small zoom_ratio and 
-        ensuring smooth interpolation.
+        Applies a multi-directional Ken Burns pan and zoom effect.
+        Directions: 'center', 'left-to-right', 'right-to-left', 'top-to-bottom', 'bottom-to-top'.
         """
-        return clip.resize(lambda t: 1 + zoom_ratio * t)
+        import random
+        if direction == "random":
+            direction = random.choice(['center', 'left-to-right', 'right-to-left', 'top-to-bottom', 'bottom-to-top'])
+            
+        duration = clip.duration
+        w, h = clip.size
+        
+        # Base zoom
+        scaled_clip = clip.resized(lambda t: 1 + (zoom_ratio * t / duration))
+        
+        if direction == "left-to-right":
+            return scaled_clip.with_position(lambda t: (int(-20 * t / duration), 'center'))
+        elif direction == "right-to-left":
+            return scaled_clip.with_position(lambda t: (int(20 * t / duration), 'center'))
+        elif direction == "top-to-bottom":
+            return scaled_clip.with_position(lambda t: ('center', int(-20 * t / duration)))
+        elif direction == "bottom-to-top":
+            return scaled_clip.with_position(lambda t: ('center', int(20 * t / duration)))
+            
+        return scaled_clip.with_position('center')
 
-    def create_basic_video(self, image_path, audio_path, bg_music_paths=None, output_name="final_video.mp4", zoom=True, preset="medium"):
+    def create_basic_video(self, image_path, audio_path, bg_music_paths=None, output_name="final_video.mp4", effects=True, preset="medium"):
         """
         Creates a video with advanced multi-track audio mixing and normalization.
         """
