@@ -1,15 +1,15 @@
-import requests
 import os
 from src.config import PEXELS_API_KEY, RAW_DATA_DIR
+from src.apis.base_client import BaseAPIClient
 
-class PexelsClient:
-    BASE_URL = "https://api.pexels.com/videos/search"
-
+class PexelsClient(BaseAPIClient):
     def __init__(self, api_key=PEXELS_API_KEY):
+        headers = {}
+        if api_key:
+            headers["Authorization"] = api_key
+            
+        super().__init__(base_url="https://api.pexels.com/videos/search", headers=headers)
         self.api_key = api_key
-        self.session = requests.Session()
-        if self.api_key:
-            self.session.headers.update({"Authorization": self.api_key})
 
     def search_videos(self, query, per_page=5):
         """
@@ -24,8 +24,7 @@ class PexelsClient:
             "orientation": "landscape"
         }
         
-        response = self.session.get(self.BASE_URL, params=params)
-        response.raise_for_status()
+        response = self.get(params=params)
         return response.json()
 
     def download_video(self, url, filename):

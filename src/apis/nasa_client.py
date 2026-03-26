@@ -1,29 +1,27 @@
-import requests
 import os
 from src.config import NASA_API_KEY, RAW_DATA_DIR
+from src.apis.base_client import BaseAPIClient
 from src.utils import retry
 
-class NASAClient:
-    BASE_URL = "https://api.nasa.gov/planetary/apod"
-
+class NASAClient(BaseAPIClient):
     def __init__(self, api_key=NASA_API_KEY):
+        super().__init__(base_url="https://api.nasa.gov/planetary/apod")
         self.api_key = api_key
-        self.session = requests.Session()
 
-    @retry(Exception, tries=3, delay=2)
+    @retry(Exception, tries=3, delay=2) # Keep specific retry wrapper for non-HTTP errors if needed
     def get_daily_fact(self, date=None):
         """
         Fetches the Astronomy Picture of the Day for a given date.
         """
         params = {
             "api_key": self.api_key,
-            "hd": True
+            "hd": "True"
         }
         if date:
             params["date"] = date
 
-        response = self.session.get(self.BASE_URL, params=params)
-        response.raise_for_status()
+        # BaseAPIClient handles raise_for_status
+        response = self.get(params=params)
         return response.json()
 
     def get_latest_image_fact(self, start_date=None, max_days=7):
