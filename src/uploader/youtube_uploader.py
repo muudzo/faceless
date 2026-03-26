@@ -98,6 +98,9 @@ class YouTubeUploader:
             # but setting status to published and being owner usually suffices for pinning logic in automation wraps.
             # Actually, pinning is often done via the YouTube UI/Studio API which is restricted.
             pass
+        except Exception as e:
+            logger.error(f"Failed to pin comment: {e}")
+
     def generate_ai_reply(self, comment_text):
         """
         Generates an AI reply to a comment using Groq.

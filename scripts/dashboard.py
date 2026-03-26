@@ -45,4 +45,3 @@ Recent Uploads:
 
 if __name__ == "__main__":
     print(get_stats())
- Aurora Dashboard v1.0
