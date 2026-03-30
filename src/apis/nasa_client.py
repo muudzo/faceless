@@ -8,8 +8,7 @@ class NASAClient(BaseAPIClient):
         super().__init__(base_url="https://api.nasa.gov/planetary/apod")
         self.api_key = api_key
 
-    @retry(Exception, tries=3, delay=2) # Keep specific retry wrapper for non-HTTP errors if needed
-    def get_daily_fact(self, date=None):
+    async def get_daily_fact(self, date=None):
         """
         Fetches the Astronomy Picture of the Day for a given date.
         """
@@ -20,11 +19,10 @@ class NASAClient(BaseAPIClient):
         if date:
             params["date"] = date
 
-        # BaseAPIClient handles raise_for_status
-        response = self.get(params=params)
+        response = await self.get(params=params)
         return response.json()
 
-    def get_latest_image_fact(self, start_date=None, max_days=7):
+    async def get_latest_image_fact(self, start_date=None, max_days=7):
         """
         Searches backwards from start_date for the most recent image APOD.
         """
@@ -32,25 +30,24 @@ class NASAClient(BaseAPIClient):
         current_date = start_date or datetime.date.today()
         
         for _ in range(max_days):
-            data = self.get_daily_fact(current_date.strftime("%Y-%m-%d"))
+            data = await self.get_daily_fact(current_date.strftime("%Y-%m-%d"))
             if data.get("media_type") == "image":
                 return data
             current_date -= datetime.timedelta(days=1)
         
         raise ValueError(f"No image APOD found in the last {max_days} days.")
 
-    @retry(Exception, tries=3, delay=5)
-    def download_image(self, url, filename):
+    async def download_image(self, url, filename, session_dir=None):
         """
-        Downloads the image from the given URL and saves it to the raw data directory.
+        Downloads the image asynchronously.
         """
-        save_path = RAW_DATA_DIR / filename
-        response = self.session.get(url, stream=True)
-        response.raise_for_status()
+        save_path = (Path(session_dir) if session_dir else RAW_DATA_DIR) / filename
         
-        with open(save_path, "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
+        async with self.client.stream("GET", url) as response:
+            response.raise_for_status()
+            with open(save_path, "wb") as f:
+                async for chunk in response.aiter_bytes():
+                    f.write(chunk)
         
         return str(save_path)
 

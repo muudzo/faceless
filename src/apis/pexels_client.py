@@ -11,7 +11,7 @@ class PexelsClient(BaseAPIClient):
         super().__init__(base_url="https://api.pexels.com/videos/search", headers=headers)
         self.api_key = api_key
 
-    def search_videos(self, query, per_page=5):
+    async def search_videos(self, query, per_page=5):
         """
         Searches for videos on Pexels based on the query.
         """
@@ -24,20 +24,20 @@ class PexelsClient(BaseAPIClient):
             "orientation": "landscape"
         }
         
-        response = self.get(params=params)
+        response = await self.get(params=params)
         return response.json()
 
-    def download_video(self, url, filename):
+    async def download_video(self, url, filename, session_dir=None):
         """
-        Downloads the video from the given URL.
+        Downloads the video asynchronously.
         """
-        save_path = RAW_DATA_DIR / filename
-        response = self.session.get(url, stream=True)
-        response.raise_for_status()
+        save_path = (Path(session_dir) if session_dir else RAW_DATA_DIR) / filename
         
-        with open(save_path, "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
+        async with self.client.stream("GET", url) as response:
+            response.raise_for_status()
+            with open(save_path, "wb") as f:
+                async for chunk in response.aiter_bytes():
+                    f.write(chunk)
         
         return str(save_path)
 
