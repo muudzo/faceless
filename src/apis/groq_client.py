@@ -13,27 +13,27 @@ class GroqClient:
         self.client = Groq(api_key=api_key)
         self.model = model
 
-    @retry(Exception, tries=3, delay=1)
-    def generate_content(self, prompt, system_prompt="You are a helpful assistant."):
+    async def generate_content(self, prompt, system_prompt="You are a helpful assistant."):
         """
         Generates text using the Groq API.
         """
-        chat_completion = self.client.chat.completions.create(
-            messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt,
-                },
-                {
-                    "role": "user",
-                    "content": prompt,
-                }
-            ],
-            model=self.model,
-            temperature=0.7,
-            max_tokens=1024,
-        )
-        return chat_completion.choices[0].message.content
+        # Groq client doesn't natively support async easily in all versions, 
+        # but we can wrap it or use their async client if available.
+        # Assuming we want to be truly async-friendly:
+        import anyio
+        
+        def _sync_gen():
+            return self.client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ],
+                model=self.model,
+                temperature=0.7,
+                max_tokens=1024,
+            ).choices[0].message.content
+
+        return await anyio.to_thread.run_sync(_sync_gen)
 
 if __name__ == "__main__":
     try:

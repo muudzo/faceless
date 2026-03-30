@@ -44,21 +44,25 @@ class SEOOptimizer:
                 return []
         return []
 
-    def optimize_metadata(self, topic):
+    async def optimize_metadata(self, title):
         """
-        Returns optimized titles and tags based on suggestions.
+        Suggests viral titles and tags based on YouTube autocomplete.
         """
-        suggestions = self.get_suggestions(topic)
-        logger.info(f"SEO suggestions for {topic}: {suggestions}")
+        from src.utils import Sanitizer
+        title = Sanitizer.clean_text(title)
         
-        # Primary title is usually the first/top suggestion
-        best_title = suggestions[0] if suggestions else topic
-        tags = suggestions[:10] # Top 10 as tags
-        
+        import httpx
+        url = f"https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q={title}"
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(url)
+                suggestions = response.json()[1]
+            except:
+                suggestions = []
+
         return {
-            "title": best_title,
-            "tags": tags,
-            "suggestions": suggestions
+            "title": suggestions[0].title() if suggestions else title,
+            "tags": [s.replace(" ", "") for s in suggestions[:5]] + ["#Shorts", "#Cosmic"]
         }
 
 if __name__ == "__main__":

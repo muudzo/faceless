@@ -12,10 +12,15 @@ class ScriptGenerator:
             except:
                 pass
 
-    def generate_short_script(self, title, explanation, research_context=None):
+    async def generate_short_script(self, title, explanation, research_context=None):
         """
         Generates an engaging, emotional narrative using Llama-3 if available.
         """
+        from src.utils import Sanitizer
+        title = Sanitizer.clean_text(title)
+        explanation = Sanitizer.clean_text(explanation)
+        research_context = Sanitizer.clean_text(research_context) if research_context else None
+
         if self.ai:
             prompt = f"""
             Write a viral, emotional 60-second YouTube Shorts script about {title}.
@@ -29,7 +34,7 @@ class ScriptGenerator:
             4. Keep it under 140 words.
             """
             try:
-                script = self.ai.generate_content(prompt, system_prompt="You are a viral YouTube storyteller.")
+                script = await self.ai.generate_content(prompt, system_prompt="You are a viral YouTube storyteller.")
                 return script.strip()
             except:
                 pass
