@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from src.config import PEXELS_API_KEY, RAW_DATA_DIR
 from src.apis.base_client import BaseAPIClient
 

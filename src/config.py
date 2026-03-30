@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ValidationInfo
 
 # Load environment variables
 load_dotenv()
@@ -20,11 +20,11 @@ class Settings(BaseModel):
     PEXELS_API_KEY: str = os.getenv("PEXELS_API_KEY", "")
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
 
-    @validator("PEXELS_API_KEY", "GROQ_API_KEY", pre=True)
-    def check_keys(cls, v, field):
+    @field_validator("PEXELS_API_KEY", "GROQ_API_KEY", mode="before")
+    @classmethod
+    def check_keys(cls, v: str, info: ValidationInfo) -> str:
         if not v or v.strip() == "":
-            # We fail for these keys specifically as they are required for production
-            raise ValueError(f"CRITICAL: {field.name} is missing from environment variables.")
+            raise ValueError(f"CRITICAL: {info.field_name} is missing from environment variables.")
         return v
 
     # Output Settings
@@ -32,9 +32,10 @@ class Settings(BaseModel):
     OUTPUT_HEIGHT: int = int(os.getenv("OUTPUT_HEIGHT", 1920))
     FPS: int = int(os.getenv("FPS", 30))
 
-    class Config:
-        arbitrary_types_allowed = True
-        case_sensitive = True
+    model_config = {
+        "arbitrary_types_allowed": True,
+        "populate_by_name": True
+    }
 
 settings = Settings()
 
