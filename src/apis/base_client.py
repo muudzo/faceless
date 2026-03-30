@@ -20,20 +20,29 @@ class BaseAPIClient:
             follow_redirects=True
         )
 
-    async def get(self, endpoint="", params=None, **kwargs):
+    async def get(self, endpoint="", params=None, retries=3, **kwargs):
         """
-        Executes an asynchronous GET request.
+        Executes an asynchronous GET request with exponential backoff and jitter.
         """
-        try:
-            response = await self.client.get(endpoint, params=params, **kwargs)
-            response.raise_for_status()
-            return response
-        except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP Error {e.response.status_code} at {e.request.url}")
-            raise
-        except httpx.RequestError as e:
-            logger.error(f"Network error at {e.request.url}: {e}")
-            raise
+        import random
+        import anyio
+        
+        last_exception = None
+        for attempt in range(retries):
+            try:
+                response = await self.client.get(endpoint, params=params, **kwargs)
+                response.raise_for_status()
+                return response
+            except (httpx.HTTPStatusError, httpx.RequestError) as e:
+                last_exception = e
+                if attempt < retries - 1:
+                    # Exponential backoff: 1, 2, 4... + jitter
+                    delay = (2 ** attempt) + random.uniform(0, 1)
+                    logger.warning(f"Retry {attempt + 1}/{retries} in {delay:.2f}s due to: {e}")
+                    await anyio.sleep(delay)
+                else:
+                    logger.error(f"Final failure after {retries} attempts: {e}")
+                    raise last_exception
 
     async def close(self):
         """Closes the underlying async client."""

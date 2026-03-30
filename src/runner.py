@@ -44,9 +44,8 @@ class VideoPipeline:
         script = await self.script_gen.generate_short_script(title, explanation, research_context)
         # Voice generation is already async in EdgeVoiceGenerator.generate_voice (wait, checking...)
         # Actually it's a wrapper, I'll call it via thread if needed or make it truly async.
-        # EdgeVoiceGenerator.generate_voice uses asyncio.run() - BAD for nested loops.
-        # I'll update EdgeVoiceGenerator next.
-        voice_path = self.voice_gen.generate_voice(script, "voiceover.mp3")
+        # EdgeVoiceGenerator.generate_voice is now async.
+        voice_path = await self.voice_gen.generate_voice(script, "voiceover.mp3")
         return script, voice_path
 
     async def run(self, date=None, dry_run=False, session_id=None):

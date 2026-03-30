@@ -10,16 +10,13 @@ class EdgeVoiceGenerator:
     def __init__(self, voice="en-US-GuyNeural"):
         self.voice = voice
 
-    async def _generate(self, text, output_path):
+    async def generate_voice(self, text, filename="voiceover_edge.mp3", session_dir=None):
+        """
+        Asynchronous voice generation.
+        """
+        output_path = (Path(session_dir) if session_dir else RAW_DATA_DIR) / filename
         communicate = edge_tts.Communicate(text, self.voice)
-        await communicate.save(output_path)
-
-    def generate_voice(self, text, filename="voiceover_edge.mp3"):
-        """
-        Synchronous wrapper for the async edge-tts generation.
-        """
-        output_path = RAW_DATA_DIR / filename
-        asyncio.run(self._generate(text, str(output_path)))
+        await communicate.save(str(output_path))
         return str(output_path)
 
 if __name__ == "__main__":
