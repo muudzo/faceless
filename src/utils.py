@@ -1,6 +1,23 @@
-import logging
 import sys
+import re
 from pathlib import Path
+
+class SensitiveDataFilter(logging.Filter):
+    """
+    Redacts sensitive information like API keys from logs.
+    """
+    def filter(self, record):
+        msg = str(record.msg)
+        # Patterns for common API keys (Groq, Pexels, etc.)
+        # Usually 30+ chars of alphanumeric/symbols
+        patterns = [
+            r'gsk_[a-zA-Z0-9]{30,}', # Groq
+            r'[a-zA-Z0-9]{56}',     # Pexels (approx)
+        ]
+        for pattern in patterns:
+            msg = re.sub(pattern, '[REDACTED]', msg)
+        record.msg = msg
+        return True
 
 def setup_logger(name="faceless_automation", log_file="pipeline.log"):
     """
@@ -22,7 +39,32 @@ def setup_logger(name="faceless_automation", log_file="pipeline.log"):
         fh.setFormatter(formatter)
         logger.addHandler(fh)
         
+        # Add security filter
+        log_filter = SensitiveDataFilter()
+        logger.addFilter(log_filter)
+        
     return logger
+
+class Sanitizer:
+    """
+    Utilities for cleaning and validating external string data.
+    """
+    @staticmethod
+    def clean_text(text, max_len=2000):
+        if not text:
+            return ""
+        # Strip HTML
+        text = re.sub(r'<[^>]*>', '', text)
+        # Strip non-printable characters
+        text = "".join(char for char in text if char.isprintable())
+        # Collapse whitespace
+        text = re.sub(r'\s+', ' ', text).strip()
+        # Truncate
+        return text[:max_len]
+
+    @staticmethod
+    def sanitize_filename(name):
+        return re.sub(r'[^a-zA-Z0-9._-]', '_', name)
 
 class PipelineError(Exception):
     """Custom exception for pipeline-related errors."""
