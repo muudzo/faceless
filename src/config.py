@@ -20,6 +20,13 @@ class Settings(BaseModel):
     PEXELS_API_KEY: str = os.getenv("PEXELS_API_KEY", "")
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
 
+    @validator("PEXELS_API_KEY", "GROQ_API_KEY", pre=True)
+    def check_keys(cls, v, field):
+        if not v or v.strip() == "":
+            # We fail for these keys specifically as they are required for production
+            raise ValueError(f"CRITICAL: {field.name} is missing from environment variables.")
+        return v
+
     # Output Settings
     OUTPUT_WIDTH: int = int(os.getenv("OUTPUT_WIDTH", 1080))
     OUTPUT_HEIGHT: int = int(os.getenv("OUTPUT_HEIGHT", 1920))
@@ -27,6 +34,7 @@ class Settings(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+        case_sensitive = True
 
 settings = Settings()
 
