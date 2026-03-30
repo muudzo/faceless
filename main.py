@@ -11,11 +11,14 @@ def validate_date(date_str):
     except ValueError:
         raise argparse.ArgumentTypeError(f"Invalid date format: '{date_str}'. Expected YYYY-MM-DD.")
 
-def main():
+import asyncio
+
+async def main():
     parser = argparse.ArgumentParser(description="Cosmic Curiosities: YouTube Automation Pipeline")
     parser.add_argument("--date", type=validate_date, help="Specific date for NASA APOD (YYYY-MM-DD)")
     parser.add_argument("--upload", action="store_true", help="Upload the generated video to YouTube")
     parser.add_argument("--dry-run", action="store_true", help="Preview assets without rendering video")
+    parser.add_argument("--session", type=str, help="Optional session ID for storage isolation")
     
     args = parser.parse_args()
     
@@ -23,7 +26,7 @@ def main():
     
     pipeline = VideoPipeline()
     try:
-        results = pipeline.run(date_val, dry_run=args.dry_run)
+        results = await pipeline.run(date_val, dry_run=args.dry_run, session_id=args.session)
         if results:
             if args.dry_run:
                 print(f"Dry Run successful!")
@@ -50,4 +53,4 @@ def main():
         print(f"Error: {e}")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
